@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { classifyHeuristically, escalateSeverity } from "./routers";
 import { computeEventHash, requireApprovedAction, sha256 } from "./db";
+import { readFileSync } from "node:fs";
 
 describe("Amanat core protection logic", () => {
   it("detects names, case numbers, GPS coordinates, and medical data", () => {
@@ -25,6 +26,11 @@ describe("Amanat core protection logic", () => {
   it("blocks destructive remediation without approval", () => {
     expect(() => requireApprovedAction(false)).toThrow("Approval required");
     expect(() => requireApprovedAction(true)).not.toThrow();
+  });
+
+  it("contains the configured Nuvira browser title", () => {
+    const html = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
+    expect(html).toContain("Nuvira — Humanitarian Data Protection Intelligence");
   });
 
   it("creates deterministic chained event hashes", () => {

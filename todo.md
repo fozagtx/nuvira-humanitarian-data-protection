@@ -20,3 +20,6 @@
 - [x] Surface finding source and asset name in the findings experience
 - [x] Add unit coverage for recurrence escalation, approval blocking, and chained event hashes
 - [x] Verify dashboard navigation and empty states at mobile viewport
+- [ ] Rename Amanat Trust Memory branding to Nuvira across the app title, dashboard, metadata, and project documentation
+- [ ] Create a private GitHub repository and push the Nuvira project code
+- [ ] Prepare the final checkpoint for supported publishing through the project UI; do not directly deploy to Vercel
