@@ -169,6 +169,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    watch: {
+      ignored: ["**/.manus-logs/**"],
+    },
     host: true,
     allowedHosts: [
       ".manuspre.computer",

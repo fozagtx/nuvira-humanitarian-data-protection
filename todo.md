@@ -1,6 +1,6 @@
 # Project TODO
 
-- [x] Establish Amanat dashboard shell with sidebar navigation for Scan History, Findings, Approvals, and Audit Trail
+- [x] Establish Nuvira dashboard shell with sidebar navigation for Scan History, Findings, Approvals, and Audit Trail
 - [x] Add exact status values: open, approved, remediated
 - [x] Add synthetic data asset scanner for pasted and uploaded OneDrive, Slack, and Outlook content
 - [x] Detect minimum PII categories: names, case numbers, GPS coordinates, and medical data
@@ -20,6 +20,6 @@
 - [x] Surface finding source and asset name in the findings experience
 - [x] Add unit coverage for recurrence escalation, approval blocking, and chained event hashes
 - [x] Verify dashboard navigation and empty states at mobile viewport
-- [ ] Rename Amanat Trust Memory branding to Nuvira across the app title, dashboard, metadata, and project documentation
-- [ ] Create a private GitHub repository and push the Nuvira project code
+- [x] Rename product branding to Nuvira across the app title, dashboard, metadata, and project documentation
+- [x] Create a private GitHub repository and push the Nuvira project code
 - [ ] Prepare the final checkpoint for supported publishing through the project UI; do not directly deploy to Vercel

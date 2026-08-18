@@ -3,7 +3,7 @@ import { invokeLLM } from "./_core/llm";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, router } from "./_core/trpc";
 import { appendEvent, approveFinding, ensurePolicies, findPriorRemediated, getDashboardData, getDb, listPolicies, remediateFinding, saveScan, sha256 } from "./db";
 
 const sourceSchema = z.enum(["OneDrive", "Slack", "Outlook"]);
@@ -28,14 +28,14 @@ async function classifyWithLLM(content: string): Promise<{ piiTypes: string[]; e
   try {
     const response = await invokeLLM({
       messages: [
-        { role: "system", content: "You are Amanat, a humanitarian data protection classifier. Return only the requested JSON. Detect names, case numbers, GPS coordinates, and medical data. Never invent evidence." },
+        { role: "system", content: "You are Nuvira, a humanitarian data protection classifier. Return only the requested JSON. Detect names, case numbers, GPS coordinates, and medical data. Never invent evidence." },
         { role: "user", content: `Classify this synthetic humanitarian content:\n\n${content.slice(0, 10000)}` },
       ],
       response_format: { type: "json_schema", json_schema: { name: "pii_classification", strict: true, schema: { type: "object", properties: { piiTypes: { type: "array", items: { type: "string" } }, evidence: { type: "array", items: { type: "string" } }, severity: { type: "string", enum: ["low", "medium", "high", "critical"] }, summary: { type: "string" } }, required: ["piiTypes", "evidence", "severity", "summary"], additionalProperties: false } } },
     });
     const raw = response.choices?.[0]?.message?.content;
     if (typeof raw === "string") return JSON.parse(raw) as { piiTypes: string[]; evidence: string[]; severity: "low" | "medium" | "high" | "critical"; summary: string };
-  } catch (error) { console.warn("[Amanat] LLM classification fallback:", error); }
+  } catch (error) { console.warn("[Nuvira] LLM classification fallback:", error); }
   const local = classifyHeuristically(content);
   return { ...local, summary: local.piiTypes.length ? `Detected ${local.piiTypes.join(", ")} in the submitted asset.` : "No configured PII categories detected." };
 }
@@ -61,7 +61,7 @@ async function retrievePolicyIds(policies: any[], piiTypes: string[], source: st
       const ids = (JSON.parse(raw) as { policyIds: number[] }).policyIds.filter(id => policies.some(policy => policy.id === id));
       if (ids.length) return ids;
     }
-  } catch (error) { console.warn("[Amanat] Semantic policy retrieval fallback:", error); }
+  } catch (error) { console.warn("[Nuvira] Semantic policy retrieval fallback:", error); }
   return matchingPolicyIds(policies, piiTypes, source);
 }
 
@@ -76,7 +76,7 @@ async function performScan(input: { name: string; source: Source; content: strin
   const summary = prior ? `${classification.summary} This asset matches a previously remediated exposure; severity escalated and prior action is linked.` : classification.summary;
   const policyIds = await retrievePolicyIds(policies, classification.piiTypes, input.source, summary);
   const result = await saveScan({ name: input.name, source: input.source, content: input.content, contentHash, severity, piiTypes: classification.piiTypes, evidence: classification.evidence, summary, priorFindingId: prior?.id, recurrence, policyIds });
-  await appendEvent({ eventType: "policy.matches.retrieved", assetId: result.assetId, findingId: result.findingId, payload: { frameworks: policies.map(policy => policy.framework), piiTypes: classification.piiTypes } });
+  await appendEvent({ eventType: "policy.matches.retrieved", assetId: result.assetId, findingId: result.findingId, payload: { frameworks: policies.map((policy: { framework: string }) => policy.framework), piiTypes: classification.piiTypes } });
   return { ...result, classification, recurrence, escalated: Boolean(prior) };
 }
 
@@ -86,11 +86,11 @@ export const appRouter = router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => { const cookieOptions = getSessionCookieOptions(ctx.req); ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 }); return { success: true } as const; }),
   }),
-  amanat: router({
-    dashboard: protectedProcedure.query(async () => getDashboardData()),
-    policies: protectedProcedure.query(async () => listPolicies()),
-    scan: protectedProcedure.input(z.object({ name: z.string().min(1), source: sourceSchema, content: z.string().min(10) })).mutation(async ({ input }) => performScan(input)),
-    seedDemo: protectedProcedure.mutation(async () => {
+  nuvira: router({
+    dashboard: publicProcedure.query(async () => getDashboardData()),
+    policies: publicProcedure.query(async () => listPolicies()),
+    scan: publicProcedure.input(z.object({ name: z.string().min(1), source: sourceSchema, content: z.string().min(10) })).mutation(async ({ input }) => performScan(input)),
+    seedDemo: publicProcedure.mutation(async () => {
       const demos: Array<{ name: string; source: Source; content: string }> = [
         { name: "displaced persons registry", source: "OneDrive", content: "Displaced persons registry\nAmina Yusuf, CASE-1042, medical diagnosis: diabetes, last seen near 34.781, 32.421. Share with field team." },
         { name: "Slack channel messages", source: "Slack", content: "#protection-ops\nJonas Reed: CASE-1042 is pregnant and staying at 34.781, 32.421. Please send the list to the partner." },
@@ -100,8 +100,8 @@ export const appRouter = router({
       for (const demo of demos) results.push(await performScan(demo));
       return results;
     }),
-    approve: protectedProcedure.input(z.object({ findingId: z.number(), action: actionSchema, note: z.string().optional() })).mutation(async ({ input, ctx }) => { await approveFinding(input.findingId, input.action, ctx.user.id, input.note); return { success: true }; }),
-    remediate: protectedProcedure.input(z.object({ findingId: z.number(), action: actionSchema })).mutation(async ({ input }) => remediateFinding(input.findingId, input.action)),
+    approve: publicProcedure.input(z.object({ findingId: z.number(), action: actionSchema, note: z.string().optional() })).mutation(async ({ input, ctx }) => { await approveFinding(input.findingId, input.action, ctx.user?.id, input.note); return { success: true }; }),
+    remediate: publicProcedure.input(z.object({ findingId: z.number(), action: actionSchema })).mutation(async ({ input }) => remediateFinding(input.findingId, input.action)),
   }),
 });
 

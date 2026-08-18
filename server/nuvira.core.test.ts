@@ -33,6 +33,25 @@ describe("Nuvira core protection logic", () => {
     expect(html).toContain("Nuvira — Humanitarian Data Protection Intelligence");
   });
 
+  it("keeps a single Home instance across dashboard sections", () => {
+    const app = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
+    expect(app).toContain('new Set(["/", "/findings", "/approvals", "/audit"])');
+    expect(app).not.toContain("path=\"/findings\" component={Home}");
+  });
+
+  it("uses Nuvira as the product name and has no leftover Amanat branding", () => {
+    const home = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
+    const layout = readFileSync(new URL("../client/src/components/DashboardLayout.tsx", import.meta.url), "utf8");
+    const routers = readFileSync(new URL("./routers.ts", import.meta.url), "utf8");
+    expect(home).toContain("Nuvira");
+    expect(home).toContain("Protection intelligence active");
+    expect(home.toLowerCase()).not.toContain("amanat");
+    expect(layout.toLowerCase()).not.toContain("amanat");
+    expect(layout).toContain("Nuvira");
+    expect(routers.toLowerCase()).not.toContain("amanat");
+    expect(routers).toContain("nuvira:");
+  });
+
   it("creates deterministic chained event hashes", () => {
     const first = computeEventHash("GENESIS", "scan.completed", 1, 2, "{}");
     const second = computeEventHash(first, "approval.granted", 1, 2, "{\"action\":\"redact\"}");
