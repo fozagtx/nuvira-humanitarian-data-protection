@@ -8,13 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, ArrowUpRight, Check, Database, FileSearch, Fingerprint, LockKeyhole, RefreshCw, ShieldCheck, Upload, Zap } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Check, Database, Download, FileSearch, Fingerprint, LockKeyhole, RefreshCw, ShieldCheck, Upload, Zap } from "lucide-react";
 
-const demoCopy = {
-  "displaced persons registry": "Displaced persons registry\nAmina Yusuf, CASE-1042, medical diagnosis: diabetes, last seen near 34.781, 32.421. Share with field team.",
-  "Slack channel messages": "#protection-ops\nJonas Reed: CASE-1042 is pregnant and staying at 34.781, 32.421. Please send the list to the partner.",
-  "donor report email": "Subject: donor report\nTo: donor@example.org\nThe beneficiary Maria Santos (CASE-2099) has malaria treatment and is located at 35.112, 33.874.",
-};
+const samples = [
+  { file: "displaced-persons-registry.csv", label: "Displaced persons registry", source: "OneDrive" as const, kind: "CSV" },
+  { file: "slack-protection-ops.txt", label: "Slack protection-ops", source: "Slack" as const, kind: "TXT" },
+  { file: "donor-report-email.txt", label: "Donor report email", source: "Outlook" as const, kind: "TXT" },
+];
 
 function parseJson(value: string | null | undefined): string[] {
   try { return value ? JSON.parse(value) : []; } catch { return value ? [value] : []; }
@@ -54,6 +54,18 @@ export default function Home() {
 
   const runScan = () => { if (!content.trim()) { toast.error("Paste or upload content first"); return; } scanMutation.mutate({ name, source, content }); };
   const uploadFile = (file?: File) => { if (!file) return; setName(file.name); const reader = new FileReader(); reader.onload = event => setContent(String(event.target?.result ?? "")); reader.readAsText(file); };
+  const loadSample = async (sample: (typeof samples)[number]) => {
+    try {
+      const response = await fetch(`/samples/${sample.file}`);
+      if (!response.ok) throw new Error("Sample missing");
+      setName(sample.file);
+      setSource(sample.source);
+      setContent(await response.text());
+      toast.success(`Loaded ${sample.label}`);
+    } catch {
+      toast.error("Could not load sample file");
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -115,7 +127,7 @@ export default function Home() {
                     <div>
                       <p className="font-mono text-sm tracking-[0.5px] text-muted-foreground">Ingest</p>
                       <CardTitle className="mt-1 text-2xl font-medium tracking-[-0.5px]">Scan a data asset</CardTitle>
-                      <p className="mt-2 max-w-[500px] text-sm leading-relaxed text-muted-foreground">Paste content or upload a synthetic export.</p>
+                      <p className="mt-2 max-w-[500px] text-sm leading-relaxed text-muted-foreground">Paste content, upload a .txt / .csv / .md / .json export, or load a sample file.</p>
                     </div>
                     <FileSearch className="h-5 w-5 text-brand-light" aria-hidden />
                   </div>
@@ -148,12 +160,23 @@ export default function Home() {
                     </Button>
                   </div>
                   <div className="border-t border-border pt-4">
-                    <p className="mb-2 font-mono text-xs tracking-[0.5px] text-muted-foreground">Load demo content</p>
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(demoCopy).map(([label, text]) => (
-                        <Button key={label} size="sm" variant="ghost" onClick={() => { setName(label); setContent(text); setSource(label === "displaced persons registry" ? "OneDrive" : label === "Slack channel messages" ? "Slack" : "Outlook"); }}>
-                          {label}
-                        </Button>
+                    <p className="mb-2 font-mono text-xs tracking-[0.5px] text-muted-foreground">Sample files — synthetic only</p>
+                    <div className="grid gap-2">
+                      {samples.map(sample => (
+                        <div key={sample.file} className="flex items-center justify-between gap-3 rounded-[10px] border border-border bg-muted/30 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm tracking-[-0.5px]">{sample.label}</p>
+                            <p className="font-mono text-xs tracking-[0.5px] text-muted-foreground">{sample.kind} · {sample.source} · {sample.file}</p>
+                          </div>
+                          <div className="flex shrink-0 gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => loadSample(sample)}>Load</Button>
+                            <Button size="sm" variant="outline" asChild>
+                              <a href={`/samples/${sample.file}`} download={sample.file} aria-label={`Download ${sample.label}`}>
+                                <Download className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>

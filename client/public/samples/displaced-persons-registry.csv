@@ -1,0 +1,6 @@
+name,case_id,medical_status,last_seen,notes
+Amina Yusuf,CASE-1042,diabetes,"34.781, 32.421",Share registry row with field team
+Jonas Reed,CASE-1042,pregnant,"34.781, 32.421",Same household as Amina Yusuf
+Maria Santos,CASE-2099,malaria treatment,"35.112, 33.874",Moved from transit site overnight
+Hassan Ibrahim,CASE-3188,HIV medication,"33.513, 36.277",Do not circulate beyond protection officers
+Leila Nasser,CASE-4410,medical diagnosis pending,"36.191, 44.009",Keep case file in OneDrive protection folder only

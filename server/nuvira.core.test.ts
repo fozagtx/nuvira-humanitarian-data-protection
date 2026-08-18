@@ -28,6 +28,16 @@ describe("Nuvira core protection logic", () => {
     expect(() => requireApprovedAction(true)).not.toThrow();
   });
 
+  it("ships synthetic sample files that trigger configured PII detectors", () => {
+    const csv = readFileSync(new URL("../client/public/samples/displaced-persons-registry.csv", import.meta.url), "utf8");
+    const slack = readFileSync(new URL("../client/public/samples/slack-protection-ops.txt", import.meta.url), "utf8");
+    const email = readFileSync(new URL("../client/public/samples/donor-report-email.txt", import.meta.url), "utf8");
+    for (const sample of [csv, slack, email]) {
+      const result = classifyHeuristically(sample);
+      expect(result.piiTypes).toEqual(expect.arrayContaining(["names", "case numbers", "GPS coordinates", "medical data"]));
+    }
+  });
+
   it("contains the configured Nuvira browser title", () => {
     const html = readFileSync(new URL("../client/index.html", import.meta.url), "utf8");
     expect(html).toContain("Nuvira — Humanitarian Data Protection Intelligence");

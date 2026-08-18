@@ -39,7 +39,15 @@ Start the app:
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000/). Tables are created on first connect. The server uses `PORT` or `3000`, and the next free port if that one is busy.
+Open [http://localhost:3000](http://localhost:3000/) locally, or the live app at [https://nuvira-blush.vercel.app](https://nuvira-blush.vercel.app).
+
+On Scan, use **Load** or **Download** on the sample files (`client/public/samples/`):
+
+- `displaced-persons-registry.csv` — OneDrive-style caseload
+- `slack-protection-ops.txt` — Slack `#protection-ops` thread
+- `donor-report-email.txt` — Outlook donor email
+
+They are synthetic. Then **Classify exposure**, or click **Run demo mode**.
 
 ## Usage
 

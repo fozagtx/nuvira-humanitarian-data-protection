@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist/public",
+  "rewrites": [
+    { "source": "/api/trpc/:path*", "destination": "/api" },
+    { "source": "/findings", "destination": "/index.html" },
+    { "source": "/approvals", "destination": "/index.html" },
+    { "source": "/audit", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  }
+}

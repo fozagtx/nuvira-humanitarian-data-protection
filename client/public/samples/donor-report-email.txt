@@ -1,0 +1,12 @@
+Subject: donor report — March caseload
+From: protection-ops@example.org
+To: donor@example.org
+Date: 12 Mar 2026
+
+The beneficiary Maria Santos (CASE-2099) has malaria treatment and is located at 35.112, 33.874.
+
+Also in this reporting period:
+- Amina Yusuf, CASE-1042, medical diagnosis: diabetes, last seen near 34.781, 32.421
+- Hassan Ibrahim, CASE-3188, HIV medication, 33.513, 36.277
+
+Please treat names, case numbers, GPS coordinates, and medical data as confidential. This is synthetic training content for Nuvira.

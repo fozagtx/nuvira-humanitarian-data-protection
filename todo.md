@@ -22,4 +22,5 @@
 - [x] Verify dashboard navigation and empty states at mobile viewport
 - [x] Rename product branding to Nuvira across the app title, dashboard, metadata, and project documentation
 - [x] Create a private GitHub repository and push the Nuvira project code
-- [ ] Prepare the final checkpoint for supported publishing through the project UI; do not directly deploy to Vercel
+- [x] Add synthetic sample files for Scan testing
+- [x] Host the app on Vercel
