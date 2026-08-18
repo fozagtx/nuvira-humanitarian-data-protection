@@ -1,0 +1,22 @@
+# Project TODO
+
+- [x] Establish Amanat dashboard shell with sidebar navigation for Scan History, Findings, Approvals, and Audit Trail
+- [x] Add exact status values: open, approved, remediated
+- [x] Add synthetic data asset scanner for pasted and uploaded OneDrive, Slack, and Outlook content
+- [x] Detect minimum PII categories: names, case numbers, GPS coordinates, and medical data
+- [x] Add built-in humanitarian policy corpus covering ICRC, GDPR, and Sphere Standards
+- [x] Add semantic-style policy retrieval for detected findings
+- [x] Persist data assets, findings, policy matches, approvals, remediation actions, and agent events
+- [x] Add recurrence detection for previously remediated assets and severity escalation
+- [x] Enforce approval gate before every redaction or access-revocation action
+- [x] Add redaction and sharing-revocation remediation actions with before/after evidence hashes
+- [x] Add hash-chained tamper-evident agent event log with timestamps
+- [x] Build filterable findings table with severity, PII types, source, status, and policy citations
+- [x] Add demo mode with displaced persons registry, Slack channel messages, and donor report email
+- [x] Add dashboard metrics, scan history, approval queue, and audit timeline
+- [x] Add server and UI tests for scanning, recurrence, approval blocking, remediation, and audit chaining
+- [x] Verify responsive UI, error/loading/empty states, and production build
+- [x] Add LLM-ranked semantic policy retrieval with deterministic fallback
+- [x] Surface finding source and asset name in the findings experience
+- [x] Add unit coverage for recurrence escalation, approval blocking, and chained event hashes
+- [x] Verify dashboard navigation and empty states at mobile viewport

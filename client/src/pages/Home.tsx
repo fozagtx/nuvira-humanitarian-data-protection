@@ -1,33 +1,74 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useMemo, useRef, useState } from "react";
+import { useLocation } from "wouter";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
+import { AlertTriangle, ArrowUpRight, Check, Database, FileSearch, Fingerprint, LockKeyhole, RefreshCw, ShieldCheck, Upload, Zap } from "lucide-react";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
+const demoCopy = {
+  "displaced persons registry": "Displaced persons registry\nAmina Yusuf, CASE-1042, medical diagnosis: diabetes, last seen near 34.781, 32.421. Share with field team.",
+  "Slack channel messages": "#protection-ops\nJonas Reed: CASE-1042 is pregnant and staying at 34.781, 32.421. Please send the list to the partner.",
+  "donor report email": "Subject: donor report\nTo: donor@example.org\nThe beneficiary Maria Santos (CASE-2099) has malaria treatment and is located at 35.112, 33.874.",
+};
+
+function parseJson(value: string | null | undefined): string[] { try { return value ? JSON.parse(value) : []; } catch { return value ? [value] : []; } }
+function formatDate(value: Date | string | null | undefined) { return value ? new Date(value).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"; }
+function severityClass(severity: string) { return severity === "critical" ? "bg-red-100 text-red-700 border-red-200" : severity === "high" ? "bg-orange-100 text-orange-700 border-orange-200" : severity === "medium" ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-emerald-100 text-emerald-700 border-emerald-200"; }
+
 export default function Home() {
-  // The useAuth hook provides authentication state.
-  // To implement login/logout, call logout(), or start login from an event
-  // handler: onClick={() => startLogin()} (imported from "@/const"). Never call
-  // startLogin() during render (no href={startLogin()}) — it mints a one-time
-  // nonce cookie and must run only at the moment of navigation.
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const [location] = useLocation();
+  const view = location === "/findings" ? "findings" : location === "/approvals" ? "approvals" : location === "/audit" ? "audit" : "history";
+  const dashboard = trpc.amanat.dashboard.useQuery(undefined, { retry: false });
+  const scanMutation = trpc.amanat.scan.useMutation({ onSuccess: () => { dashboard.refetch(); toast.success("Scan complete", { description: "Amanat stored the finding and linked relevant policy memory." }); }, onError: error => toast.error(error.message) });
+  const demoMutation = trpc.amanat.seedDemo.useMutation({ onSuccess: result => { dashboard.refetch(); toast.success(`${result.length} demo assets scanned`); }, onError: error => toast.error(error.message) });
+  const approveMutation = trpc.amanat.approve.useMutation({ onSuccess: () => { dashboard.refetch(); toast.success("Approval recorded"); }, onError: error => toast.error(error.message) });
+  const remediateMutation = trpc.amanat.remediate.useMutation({ onSuccess: () => { dashboard.refetch(); toast.success("Remediation completed and hashed in the audit trail"); }, onError: error => toast.error(error.message) });
+  const [name, setName] = useState("new protection asset");
+  const [source, setSource] = useState<"OneDrive" | "Slack" | "Outlook">("OneDrive");
+  const [content, setContent] = useState("");
+  const [filter, setFilter] = useState("all");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const data = dashboard.data;
+  const findings = useMemo(() => (data?.findings ?? []).filter(finding => filter === "all" || finding.status === filter || finding.severity === filter), [data, filter]);
+  const stats = { assets: data?.assets.length ?? 0, open: data?.findings.filter(f => f.status === "open").length ?? 0, critical: data?.findings.filter(f => f.severity === "critical").length ?? 0, events: data?.events.length ?? 0 };
+  const metricCards: Array<[string, number, string, React.ComponentType<{ className?: string }>]> = [["Data assets", stats.assets, "persistent memory", Database], ["Open findings", stats.open, "awaiting approval", AlertTriangle], ["Critical exposures", stats.critical, "escalated by risk", ShieldCheck], ["Audit events", stats.events, "hash-chained records", Fingerprint]];
 
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  const runScan = () => { if (!content.trim()) { toast.error("Paste or upload content first"); return; } scanMutation.mutate({ name, source, content }); };
+  const uploadFile = (file?: File) => { if (!file) return; setName(file.name); const reader = new FileReader(); reader.onload = event => setContent(String(event.target?.result ?? "")); reader.readAsText(file); };
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
+  return <DashboardLayout>
+    <div className="min-h-[calc(100vh-2rem)] bg-[#f5f7f6] -m-4 p-5 md:p-8 text-slate-900">
+      <div className="mx-auto max-w-[1440px] space-y-7">
+        <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div><div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Trust memory active</div><h1 className="text-3xl font-semibold tracking-tight md:text-5xl">Amanat <span className="font-serif italic text-emerald-700">control room</span></h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Humanitarian data protection that remembers every exposure, policy decision, approval, and remediation.</p></div>
+          <div className="flex flex-wrap gap-2"><Button variant="outline" className="bg-white" onClick={() => dashboard.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Refresh</Button><Button onClick={() => demoMutation.mutate()} disabled={demoMutation.isPending} className="bg-slate-900 hover:bg-emerald-700"><Zap className="mr-2 h-4 w-4" />Run demo mode</Button></div>
+        </header>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{metricCards.map(([label, value, note, Icon]) => <Card key={String(label)} className="border-0 bg-white shadow-sm"><CardContent className="p-5"><div className="flex items-start justify-between"><div><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-3xl font-semibold">{value}</p><p className="mt-1 text-xs text-slate-400">{note}</p></div><div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700"><Icon className="h-5 w-5" /></div></div></CardContent></Card>)} </div>
+
+        <Tabs value={view} className="w-full"><TabsList className="h-auto flex-wrap justify-start gap-1 rounded-xl bg-white p-1 shadow-sm"><TabsTrigger value="history" asChild><a href="/">Scan History</a></TabsTrigger><TabsTrigger value="findings" asChild><a href="/findings">Findings</a></TabsTrigger><TabsTrigger value="approvals" asChild><a href="/approvals">Approvals</a></TabsTrigger><TabsTrigger value="audit" asChild><a href="/audit">Audit Trail</a></TabsTrigger></TabsList></Tabs>
+
+        {view === "history" && <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          <Card className="border-0 bg-slate-950 text-white shadow-xl"><CardHeader><div className="flex items-center justify-between"><div><CardTitle className="text-xl">Scan a data asset</CardTitle><p className="mt-1 text-sm text-slate-400">Paste content or upload a synthetic export.</p></div><FileSearch className="h-5 w-5 text-emerald-400" /></div></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 sm:grid-cols-[1fr_150px]"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Asset name" className="border-slate-800 bg-slate-900 text-white placeholder:text-slate-500" /><select value={source} onChange={e => setSource(e.target.value as any)} className="rounded-md border border-slate-800 bg-slate-900 px-3 text-sm text-white"><option>OneDrive</option><option>Slack</option><option>Outlook</option></select></div><Textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Paste a synthetic registry, Slack export, or donor email…" className="min-h-[190px] resize-none border-slate-800 bg-slate-900 text-white placeholder:text-slate-500" /><div className="flex flex-wrap gap-2"><input ref={fileRef} type="file" accept=".txt,.csv,.md,.json" className="hidden" onChange={e => uploadFile(e.target.files?.[0])} /><Button variant="outline" onClick={() => fileRef.current?.click()} className="border-slate-700 bg-transparent text-slate-200 hover:bg-slate-800"><Upload className="mr-2 h-4 w-4" />Upload text</Button><Button onClick={runScan} disabled={scanMutation.isPending} className="bg-emerald-500 text-slate-950 hover:bg-emerald-400">{scanMutation.isPending ? "Classifying…" : "Classify exposure"}<ArrowUpRight className="ml-2 h-4 w-4" /></Button></div><div className="border-t border-slate-800 pt-4"><p className="mb-2 text-xs uppercase tracking-wider text-slate-500">Load demo content</p><div className="flex flex-wrap gap-2">{Object.entries(demoCopy).map(([label, text]) => <Button key={label} size="sm" variant="ghost" onClick={() => { setName(label); setContent(text); setSource(label === "displaced persons registry" ? "OneDrive" : label === "Slack channel messages" ? "Slack" : "Outlook"); }} className="text-slate-300 hover:bg-slate-800 hover:text-white">{label}</Button>)}</div></div></CardContent></Card>
+          <Card className="border-0 bg-white shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2 text-xl"><LockKeyhole className="h-5 w-5 text-emerald-700" />Protection posture</CardTitle><p className="text-sm text-slate-500">Built-in policy memory and non-bypassable action controls.</p></CardHeader><CardContent className="space-y-5"><div className="grid gap-3 sm:grid-cols-3">{[["ICRC", "confidentiality"], ["GDPR", "minimisation"], ["Sphere Standards", "do no harm"]].map(([framework, detail]) => <div key={framework} className="rounded-xl bg-[#f5f7f6] p-4"><p className="font-semibold">{framework}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div>)}</div><Separator /><div className="space-y-3 text-sm"><div className="flex items-center justify-between"><span className="text-slate-500">Persistent memory</span><Badge className="bg-emerald-100 text-emerald-700">Connected</Badge></div><div className="flex items-center justify-between"><span className="text-slate-500">Human approval gate</span><Badge className="bg-emerald-100 text-emerald-700">Required</Badge></div><div className="flex items-center justify-between"><span className="text-slate-500">Tamper-evident ledger</span><Badge className="bg-emerald-100 text-emerald-700">Hash chained</Badge></div></div><div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">Amanat never redacts or revokes access from an unapproved finding. Every action requires an explicit approval record.</div></CardContent></Card>
+        </div>}
+
+        {view === "findings" && <FindingsView findings={findings} filter={filter} setFilter={setFilter} policyMap={data?.policyMap ?? {}} onApprove={(id: number, action: "redact" | "revoke_access") => approveMutation.mutate({ findingId: id, action })} onRemediate={(id: number, action: "redact" | "revoke_access") => remediateMutation.mutate({ findingId: id, action })} />}
+        {view === "approvals" && <ApprovalsView findings={data?.findings ?? []} approvals={data?.approvals ?? []} onApprove={(id: number, action: "redact" | "revoke_access") => approveMutation.mutate({ findingId: id, action })} onRemediate={(id: number, action: "redact" | "revoke_access") => remediateMutation.mutate({ findingId: id, action })} />}
+        {view === "audit" && <AuditView events={data?.events ?? []} />}
+      </div>
     </div>
-  );
+  </DashboardLayout>;
 }
+
+function FindingsView({ findings, filter, setFilter, policyMap, onApprove, onRemediate }: any) { return <Card className="border-0 bg-white shadow-sm"><CardHeader className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between"><div><CardTitle className="text-xl">Detected exposures</CardTitle><p className="mt-1 text-sm text-slate-500">Review persistent findings before any action is taken.</p></div><select value={filter} onChange={e => setFilter(e.target.value)} className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"><option value="all">All findings</option><option value="open">open</option><option value="approved">approved</option><option value="remediated">remediated</option><option value="critical">critical</option><option value="high">high</option></select></CardHeader><CardContent><div className="space-y-3">{findings.length === 0 ? <EmptyState text="No findings match this filter." /> : findings.map((finding: any) => <div key={finding.id} className="rounded-2xl border border-slate-100 p-4 transition hover:border-emerald-200 hover:shadow-sm"><div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><Badge className={severityClass(finding.severity)}>{finding.severity}</Badge><Badge variant="outline">{finding.status}</Badge>{finding.recurrence > 0 && <Badge className="bg-violet-100 text-violet-700">recurrence ×{finding.recurrence}</Badge>}</div><h3 className="mt-3 font-semibold">{finding.summary}</h3><p className="mt-1 text-xs font-medium uppercase tracking-wider text-slate-400">Source: {finding.source} · {finding.assetName}</p><div className="mt-2 flex flex-wrap gap-2">{parseJson(finding.piiTypes).map(type => <span key={type} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">{type}</span>)}</div><p className="mt-3 text-sm text-slate-500">Evidence: {parseJson(finding.evidence).join(" · ") || "No direct evidence"}</p><div className="mt-3 flex flex-wrap gap-2">{(policyMap[finding.id] ?? []).map((policy: any) => <span key={policy?.id} className="text-xs font-medium text-emerald-700">{policy?.framework} · {policy?.citation}</span>)}</div></div><div className="flex shrink-0 flex-col gap-2 lg:w-44">{finding.status === "open" && <><Button size="sm" onClick={() => onApprove(finding.id, "redact")} className="bg-slate-900 hover:bg-emerald-700"><Check className="mr-2 h-4 w-4" />Approve redaction</Button><Button size="sm" variant="outline" onClick={() => onApprove(finding.id, "revoke_access")}>Approve access revoke</Button></>}{finding.status === "approved" && <><Button size="sm" onClick={() => onRemediate(finding.id, "redact")} className="bg-emerald-600 hover:bg-emerald-700">Execute redaction</Button><Button size="sm" variant="outline" onClick={() => onRemediate(finding.id, "revoke_access")}>Revoke access</Button></>}{finding.status === "remediated" && <div className="rounded-lg bg-emerald-50 p-3 text-center text-xs font-medium text-emerald-700">Remediation recorded</div>}</div></div></div>)}</div></CardContent></Card> }
+function ApprovalsView({ findings, approvals, onApprove, onRemediate }: any) { const pending = findings.filter((finding: any) => finding.status === "open"); return <div className="grid gap-6 xl:grid-cols-[1fr_0.8fr]"><Card className="border-0 bg-white shadow-sm"><CardHeader><CardTitle>Approval queue</CardTitle><p className="text-sm text-slate-500">Explicit consent is required before destructive actions.</p></CardHeader><CardContent className="space-y-3">{pending.length === 0 ? <EmptyState text="No findings are waiting for approval." /> : pending.map((finding: any) => <div key={finding.id} className="rounded-xl border border-amber-100 bg-amber-50/40 p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold">Finding #{finding.id}</p><p className="mt-1 text-sm text-slate-600">{finding.summary}</p></div><Badge className="bg-amber-100 text-amber-700">approval needed</Badge></div><div className="mt-4 flex flex-wrap gap-2"><Button size="sm" onClick={() => onApprove(finding.id, "redact")} className="bg-slate-900">Approve redaction</Button><Button size="sm" variant="outline" onClick={() => onApprove(finding.id, "revoke_access")}>Approve revoke</Button></div></div>)}</CardContent></Card><Card className="border-0 bg-white shadow-sm"><CardHeader><CardTitle>Decision history</CardTitle></CardHeader><CardContent className="space-y-3">{approvals.length === 0 ? <EmptyState text="No approval records yet." /> : approvals.map((approval: any) => <div key={approval.id} className="rounded-xl bg-slate-50 p-3 text-sm"><div className="flex justify-between"><span className="font-medium">Finding #{approval.findingId}</span><Badge variant="outline">{approval.decision}</Badge></div><p className="mt-1 text-slate-500">{approval.action} · {formatDate(approval.createdAt)}</p></div>)}</CardContent></Card></div> }
+function AuditView({ events }: any) { return <Card className="border-0 bg-white shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><Fingerprint className="h-5 w-5 text-emerald-700" />Tamper-evident audit trail</CardTitle><p className="text-sm text-slate-500">Each event carries the hash of the previous event.</p></CardHeader><CardContent>{events.length === 0 ? <EmptyState text="No audit events yet. Run demo mode or scan an asset." /> : <div className="space-y-0">{events.map((event: any, index: number) => <div key={event.id} className="relative flex gap-4 pb-6"><div className="flex flex-col items-center"><div className="mt-1 h-3 w-3 rounded-full border-2 border-emerald-600 bg-white" />{index < events.length - 1 && <div className="w-px flex-1 bg-emerald-100" />}</div><div className="min-w-0 flex-1 rounded-xl border border-slate-100 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">{event.eventType}</span><span className="text-xs text-slate-400">{formatDate(event.createdAt)}</span></div><p className="mt-2 break-all font-mono text-[11px] text-slate-400">event {event.eventHash}</p><p className="mt-1 break-all font-mono text-[11px] text-slate-400">previous {event.previousHash}</p></div></div>)}</div>}</CardContent></Card> }
+function EmptyState({ text }: { text: string }) { return <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">{text}</div>; }
