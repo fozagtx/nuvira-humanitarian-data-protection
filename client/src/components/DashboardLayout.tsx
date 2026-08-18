@@ -19,7 +19,7 @@ export default function DashboardLayout({
       <header className="sticky top-0 z-50 border-b border-border bg-background">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
           <Link href="/" className="flex shrink-0 items-center gap-2 rounded-2xl focus-visible:ring-2 focus-visible:ring-ring">
-            <span className="h-2 w-2 rounded-sm bg-brand" aria-hidden />
+            <img src="/logo.png" alt="" width={28} height={28} className="h-7 w-7 rounded-md" />
             <span className="text-sm font-medium tracking-[-0.5px]">Nuvira</span>
           </Link>
           <nav aria-label="Primary" className="flex min-w-0 flex-1 items-center justify-end gap-1 overflow-x-auto">

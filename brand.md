@@ -38,6 +38,8 @@ One accent only. No emerald, no cool gray, no purple glow.
 - Cards: light radius, hairline border, no drop-shadow glow
 - Status: small filled dots, not chips with pastels
 
-## Voice
+## Assets
 
-Operational, specific, short. Protection ops console — not a marketing landing page.
+- Mark: `client/public/logo.png`
+- Favicon: `client/public/favicon.png`
+- Lockup: `client/public/nuvira-logo.png`
