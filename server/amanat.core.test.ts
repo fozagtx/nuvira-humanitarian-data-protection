@@ -3,7 +3,7 @@ import { classifyHeuristically, escalateSeverity } from "./routers";
 import { computeEventHash, requireApprovedAction, sha256 } from "./db";
 import { readFileSync } from "node:fs";
 
-describe("Amanat core protection logic", () => {
+describe("Nuvira core protection logic", () => {
   it("detects names, case numbers, GPS coordinates, and medical data", () => {
     const result = classifyHeuristically("Amina Yusuf CASE-1042 has diabetes near 34.781, 32.421");
     expect(result.piiTypes).toEqual(expect.arrayContaining(["names", "case numbers", "GPS coordinates", "medical data"]));
